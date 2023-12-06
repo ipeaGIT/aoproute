@@ -1,5 +1,5 @@
 options(
-  TARGETS_SHOW_PROGRESS = FALSE,
+  TARGETS_SHOW_PROGRESS = TRUE,
   TARGETS_N_CORES = 35
 )
 
@@ -10,6 +10,7 @@ suppressPackageStartupMessages({
 })
 
 source("R/1_prep.R", encoding = "UTF-8")
+source("R/2_r5r_file_structure.R", encoding = "UTF-8")
 
 if (!interactive()) future::plan(future.callr::callr)
 
@@ -39,5 +40,9 @@ list(
     retrieval = "worker",
     storage = "worker",
     iteration = "list"
-  )
+  ),
+  
+  # 2_r5r_file_structure
+  tar_target(r5_dirs, create_r5_dirs(pop_units)),
+  tar_target(elevation_data, download_elevation_data(pop_units, r5_dirs))
 )
