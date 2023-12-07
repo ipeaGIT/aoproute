@@ -66,56 +66,56 @@ download_elevation_data <- function(pop_units, r5_dirs) {
   
   future::plan(future.callr::callr, workers = getOption("TARGETS_N_CORES"))
   
+  # some of the tiles fall entirely on the ocean, so they are not included in
+  # the usgs database. in these cases, following the constructed url returns a
+  # 404 error, which ultimately results in 1kb invalid .zip files being
+  # downloaded. in this case, utils::unzip() returns NULL and throws a warning,
+  # which we ignore.
+  
   tmpdir <- tempdir()
   
-  unzipped_tiles <- furrr::future_map_chr(
+  unzipped_tiles <- furrr::future_map(
     output_files,
-    function(f) utils::unzip(f, exdir = tmpdir),
+    function(f) suppressWarnings(utils::unzip(f, exdir = tmpdir)),
     .progress = TRUE
   )
-  
-  # terra::rast() only creates a point to the file, but doesn't load the values
-  # to RAM. this prevents us from using parallelization to process our data. so
-  # we first wrap it and then unwrap it when actually applying the function
-  
-  tiles_rasters <- lapply(
-    unzipped_tiles,
-    function(t) terra::wrap(terra::rast(t))
-  )
-  names(tiles_rasters) <- unique_tiles
-  
-  # disabling the future globals' max size check because we have to pass
-  # 'tiles_rasters', which is a very large object, as a global
-  
-  old_options <- options(future.globals.maxSize = Inf)
-  on.exit(options(old_options), add = TRUE)
-  
-  pop_units_rasters <- furrr::future_map(
-    pop_units_tiles,
-    function(selected_tiles) {
-      selected_rasters <- tiles_rasters[selected_tiles]
-      selected_rasters <- lapply(selected_rasters, terra::unwrap)
-      
-      names(selected_rasters) <- NULL
-      
-      combined_raster <- do.call(
-        terra::mosaic,
-        args = append(selected_rasters, list(fun = "mean"))
-      )
-      
-      terra::wrap(combined_raster)
-    },
-    .progress = TRUE,
-    .options = furrr::furrr_options(seed = TRUE)
-  )
+  names(unzipped_tiles) <- unique_tiles
   
   elevation_files <- furrr::future_pmap_chr(
-    list(pop_units_rasters, r5_dirs),
-    function(elev, r5_dir) {
-      elev <- terra::unwrap(elev)
-      elev_path <- file.path(r5_dir, "elevation.tif")
+    list(
+      selected_tiles = pop_units_tiles,
+      r5_dir = r5_dirs,
+      bbox = bboxes,
+      i = 1:length(pop_units_tiles)
+    ),
+    function(selected_tiles, r5_dir, bbox, i) {
+      selected_files <- unzipped_tiles[selected_tiles]
       
-      terra::writeRaster(elev, elev_path, overwrite = TRUE)
+      selected_rasters <- lapply(
+        selected_files,
+        function(f) tryCatch(terra::rast(f), error = function(cnd) NULL)
+      )
+      names(selected_rasters) <- NULL
+      
+      # removing NULL elements from selected_rasters because some of the
+      # elements may have been created from the missing tiles, which leads to an
+      # error in terra::mosaic()
+      
+      selected_rasters <- Filter(Negate(is.null), selected_rasters)
+      
+      if (length(selected_rasters) > 1) {
+        combined_raster <- do.call(
+          terra::mosaic,
+          args = append(selected_rasters, list(fun = "mean"))
+        )
+      } else {
+        combined_raster <- selected_rasters[[1]]
+      }
+      
+      combined_raster <- terra::crop(combined_raster, bbox)
+      
+      elev_path <- file.path(r5_dir, "elevation.tif")
+      terra::writeRaster(combined_raster, elev_path, overwrite = TRUE)
       
       elev_path
     },
@@ -125,50 +125,7 @@ download_elevation_data <- function(pop_units, r5_dirs) {
   
   future::plan(future::sequential)
   
-  
-  
-  
-  
-  rasters <- gsub("\\.zip", "", output)
-  
-  lista_rasters <- lapply(rasters, terra::rast)
-  raster_combinado <- do.call(
-    terra::mosaic,
-    args = c(lista_rasters, fun = "mean")
-  )
-  raster_combinado <- terra::crop(raster_combinado, bbox)
-  
-  terra::writeRaster(raster_combinado, "data/topografia.tif", overwrite = TRUE)
-  
-  
-  
-  elevation_files <- furrr::future_map_chr(
-    1:nrow(pop_units),
-    function(i) {
-      requireNamespace("sf", quietly = TRUE)
-      
-      pop_unit <- pop_units[i, ]
-      
-      elevation <- elevatr::get_elev_raster(
-        pop_unit,
-        z = 12,
-        verbose = FALSE,
-        serial = TRUE
-      )
-      elevation <- terra::rast(elevation)
-      
-      r5_dir <- r5_dirs[i]
-      
-      elevation_file <- file.path(r5_dir, "elevation.tif")
-      terra::writeRaster(elevation, elevation_file, overwrite = TRUE)
-      
-      elevation_file
-    },
-    .options = furrr::furrr_options(seed = TRUE),
-    .progress = getOption("TARGETS_SHOW_PROGRESS")
-  )
-  
-  future::plan(future::sequential)
+  return(elevation_files)
 }
 
 tiles_from_bbox <- function(bbox) {
