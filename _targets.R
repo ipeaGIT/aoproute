@@ -24,9 +24,15 @@ list(
     "../../data/acesso_oport_v2/pop_units.rds",
     format = "file"
   ),
+  tar_target(brazil_pbf, "data/brazil_20231226.osm.pbf", format = "file_fast"),
   
   # 1_prep
   tar_target(pop_units, readRDS(pop_units_dataset), iteration = "group"),
+  tar_target(
+    batches_by_pop_unit_area,
+    get_batches_by_area(pop_units, n_batches),
+    iteration = "list"
+  ),
   tar_target(paths_list, get_grids_paths(pop_units, h3_resolutions)),
   tar_target(
     batches,
@@ -41,8 +47,18 @@ list(
     storage = "worker",
     iteration = "list"
   ),
+  tar_target(filtered_brazil_pbf, filter_pbf(brazil_pbf), format = "file_fast"),
   
   # 2_r5r_file_structure
   tar_target(r5_dirs, create_r5_dirs(pop_units)),
-  tar_target(elevation_data, download_elevation_data(pop_units, r5_dirs))
+  tar_target(elevation_data, download_elevation_data(pop_units, r5_dirs)),
+  tar_target(
+    pbf_data,
+    crop_pbf_data(filtered_brazil_pbf, pop_units, batches_by_pop_unit_area),
+    format = "file",
+    pattern = map(batches_by_pop_unit_area),
+    retrieval = "worker",
+    storage = "worker",
+    iteration = "list"
+  )
 )

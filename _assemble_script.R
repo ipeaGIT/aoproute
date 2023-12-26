@@ -4,3 +4,4 @@
 tar_make(batches)
 tar_make_future(routing_points, workers = 35)
 tar_make(elevation_data)
+tar_make(pbf_data, workers = 20)

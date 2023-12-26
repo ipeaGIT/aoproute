@@ -146,3 +146,33 @@ tiles_from_bbox <- function(bbox) {
   
   return(tiles)
 }
+
+# filtered_brazil_pbf <- tar_read(filtered_brazil_pbf)
+# pop_units <- tar_read(pop_units)
+# indices <- tar_read(batches_by_pop_unit_area)[[1]]
+crop_pbf_data <- function(filtered_brazil_pbf, pop_units, indices) {
+  cropped_files <- vapply(
+    indices,
+    FUN.VALUE = character(1),
+    FUN = function(i) {
+      pop_unit <- pop_units[i, ]
+      
+      pop_unit_dir <- paste0(
+        "../../data/acesso_oport_v2/r5/",
+        pop_unit$code_pop_unit, "_", pop_unit$treated_name
+      )
+      cropped_pbf_path <- file.path(pop_unit_dir, "street_network.osm.pbf")
+      
+      rosmium::extract(
+        filtered_brazil_pbf,
+        extent = pop_unit,
+        output_path = cropped_pbf_path,
+        overwrite = TRUE
+      )
+      
+      cropped_pbf_path
+    }
+  )
+  
+  return(cropped_files)
+}

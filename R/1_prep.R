@@ -1,3 +1,27 @@
+# pop_units <- tar_read(pop_units)
+# n_batches <- tar_read(n_batches)
+get_batches_by_area <- function(pop_units, n_batches) {
+  # order pop_units by their area and balance batches with small and large units
+  
+  areas <- as.numeric(sf::st_area(pop_units))
+  names(areas) <- 1:nrow(pop_units)
+  
+  areas <- areas[order(areas)]
+  
+  ordered_units <- as.integer(names(areas))
+  
+  batches_indices <- lapply(
+    1:n_batches,
+    function(b) {
+      assigned_batch <- 1:length(areas) %% n_batches
+      assigned_current_group <- ordered_units[assigned_batch == (b - 1)]
+      assigned_current_group
+    }
+  )
+  
+  return(batches_indices)
+}
+
 # grids_paths <- tar_read(paths_list)
 # n_batches <- tar_read(n_batches)
 get_batches_indices <- function(grids_paths, n_batches) {
@@ -106,4 +130,19 @@ routing_points_from_path <- function(path) {
   routing_points <- dplyr::select(routing_points, id = h3_address, geometry)
   
   return(routing_points)
+}
+
+# brazil_pbf <- tar_read(brazil_pbf)
+filter_pbf <- function(brazil_pbf) {
+  filtered_path <- "data/filtered_brazil_20231226.osm.pbf"
+  
+  rosmium::tags_filter(
+    brazil_pbf,
+    filters = paste(
+      "w/highway w/park_ride w/public_transport=platform w/railway=platform",
+      "r/type=restriction"
+    ),
+    output_path = filtered_path,
+    overwrite = TRUE
+  )
 }
