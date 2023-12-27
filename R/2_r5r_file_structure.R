@@ -15,10 +15,13 @@ create_r5_dirs <- function(pop_units) {
 
 # pop_units <- tar_read(pop_units)
 # r5_dirs <- tar_read(r5_dirs)
-download_elevation_data <- function(pop_units, r5_dirs) {
-  # was originally using {elevatr} to downoad the data, but kept stumbling upon
+# indices <- tar_read(batches_by_pop_unit_area)[[1]]
+download_elevation_data <- function(pop_units, r5_dirs, indices) {
+  # was originally using {elevatr} to download the data, but kept stumbling upon
   # some C stack usage errors. decided to do it "manually".
   
+  r5_dirs <- r5_dirs[indices]
+  pop_units <- pop_units[indices, ]
   pop_units <- sf::st_transform(pop_units, 4326)
   
   # using the bounding box of each feature to get the tiles that cover them
@@ -64,8 +67,6 @@ download_elevation_data <- function(pop_units, r5_dirs) {
     }
   )
   
-  future::plan(future.callr::callr, workers = getOption("TARGETS_N_CORES"))
-  
   # some of the tiles fall entirely on the ocean, so they are not included in
   # the usgs database. in these cases, following the constructed url returns a
   # 404 error, which ultimately results in 1kb invalid .zip files being
@@ -74,20 +75,17 @@ download_elevation_data <- function(pop_units, r5_dirs) {
   
   tmpdir <- tempdir()
   
-  unzipped_tiles <- furrr::future_map(
+  unzipped_tiles <- lapply(
     output_files,
-    function(f) suppressWarnings(utils::unzip(f, exdir = tmpdir)),
-    .progress = TRUE
+    function(f) suppressWarnings(utils::unzip(f, exdir = tmpdir))
   )
   names(unzipped_tiles) <- unique_tiles
   
-  elevation_files <- furrr::future_pmap_chr(
-    list(
-      selected_tiles = pop_units_tiles,
-      r5_dir = r5_dirs,
-      bbox = bboxes,
-      i = 1:length(pop_units_tiles)
-    ),
+  elevation_files <- mapply(
+    selected_tiles = pop_units_tiles,
+    r5_dir = r5_dirs,
+    bbox = bboxes,
+    i = 1:length(pop_units_tiles),
     function(selected_tiles, r5_dir, bbox, i) {
       selected_files <- unzipped_tiles[selected_tiles]
       
@@ -119,11 +117,10 @@ download_elevation_data <- function(pop_units, r5_dirs) {
       
       elev_path
     },
-    .progress = TRUE,
-    .options = furrr::furrr_options(seed = TRUE)
+    SIMPLIFY = FALSE
   )
   
-  future::plan(future::sequential)
+  elevation_files <- unlist(elevation_files)
   
   return(elevation_files)
 }
@@ -175,4 +172,22 @@ crop_pbf_data <- function(filtered_brazil_pbf, pop_units, indices) {
   )
   
   return(cropped_files)
+}
+
+# elevation_data <- tar_read(elevation_data, branches = 1)[[1]]
+# pbf_data <- tar_read(pbf_data, branches = 1)[[1]]
+build_r5_network <- function(elevation_data, pbf_data) {
+  r5_dirs <- fs::path_dir(elevation_data)
+  
+  r5r_cores <- lapply(
+    r5_dirs,
+    function(x) {
+      core <- r5r::setup_r5(x, overwrite = TRUE)
+      suppressMessages(r5r::stop_r5(core))
+    }
+  )
+  
+  r5_networks <- file.path(r5_dirs, "network.dat")
+  
+  return(r5_networks)
 }

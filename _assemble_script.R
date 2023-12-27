@@ -2,6 +2,6 @@
 # should not. doesn't necessarily run all targets and doesn't necessarily
 # reflects the actual order in which they were run
 tar_make(batches)
-tar_make_future(routing_points, workers = 35)
-tar_make(elevation_data)
-tar_make(pbf_data, workers = 20)
+tar_make_future(c(routing_points, elevation_data), workers = 35)
+tar_make_future(pbf_data, workers = 20)
+tar_make_future(r5_network, workers = 8)

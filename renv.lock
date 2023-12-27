@@ -93,6 +93,19 @@
       ],
       "Hash": "ae6cbbe1492f4de79c45fce06f967ce8"
     },
+    "V8": {
+      "Package": "V8",
+      "Version": "4.4.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Rcpp",
+        "curl",
+        "jsonlite",
+        "utils"
+      ],
+      "Hash": "435359b59b8a9b8f9235135da471ea3c"
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.2.0",
@@ -135,6 +148,18 @@
         "utils"
       ],
       "Hash": "9b2191ede20fa29828139b9900922e51"
+    },
+    "checkmate": {
+      "Package": "checkmate",
+      "Version": "2.3.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "backports",
+        "utils"
+      ],
+      "Hash": "c01cab1cb0f9125211a6fc99d540e315"
     },
     "class": {
       "Package": "class",
@@ -199,6 +224,21 @@
         "stats"
       ],
       "Hash": "f20c47fd52fae58b4e377c37bb8c335b"
+    },
+    "concaveman": {
+      "Package": "concaveman",
+      "Version": "1.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "V8",
+        "dplyr",
+        "jsonlite",
+        "magrittr",
+        "sf"
+      ],
+      "Hash": "6303d93b9a915fbb7dbbf31e1ba5d3a9"
     },
     "cpp11": {
       "Package": "cpp11",
@@ -323,6 +363,17 @@
       "Repository": "CRAN",
       "Hash": "8106d78941f34855c440ddb946b8f7a5"
     },
+    "fs": {
+      "Package": "fs",
+      "Version": "1.6.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "methods"
+      ],
+      "Hash": "47b5f30c720c23999b913a1a635cf0bb"
+    },
     "furrr": {
       "Package": "furrr",
       "Version": "0.3.1",
@@ -376,6 +427,31 @@
         "methods"
       ],
       "Hash": "15e9634c0fcd294799e9b2e929ed1b86"
+    },
+    "geojsonsf": {
+      "Package": "geojsonsf",
+      "Version": "2.0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "Rcpp",
+        "geometries",
+        "jsonify",
+        "rapidjsonr",
+        "sfheaders"
+      ],
+      "Hash": "8d077646c6713838233e8710910ef92e"
+    },
+    "geometries": {
+      "Package": "geometries",
+      "Version": "0.2.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Rcpp"
+      ],
+      "Hash": "122e8341ead01f3746dd312ecc5ffd28"
     },
     "ggplot2": {
       "Package": "ggplot2",
@@ -511,6 +587,18 @@
         "utils"
       ],
       "Hash": "0080607b4a1a7b28979aecef976d8bc2"
+    },
+    "jsonify": {
+      "Package": "jsonify",
+      "Version": "1.2.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "Rcpp",
+        "rapidjsonr"
+      ],
+      "Hash": "49a9775e4f8c96c654b6018739067055"
     },
     "jsonlite": {
       "Package": "jsonlite",
@@ -772,6 +860,45 @@
       ],
       "Hash": "1cba04a4e9414bdefc9dcaa99649a8dc"
     },
+    "r5r": {
+      "Package": "r5r",
+      "Version": "1.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "checkmate",
+        "concaveman",
+        "curl",
+        "data.table",
+        "httr",
+        "jsonlite",
+        "rJava",
+        "sf",
+        "sfheaders",
+        "utils",
+        "zip"
+      ],
+      "Hash": "310d39ba2958f91a655580ac1433999e"
+    },
+    "rJava": {
+      "Package": "rJava",
+      "Version": "1.0-10",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "methods"
+      ],
+      "Hash": "151b95627c232d3822bb6d876286a99c"
+    },
+    "rapidjsonr": {
+      "Package": "rapidjsonr",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "88b9f48c93d17cdb811b54079a6a414f"
+    },
     "renv": {
       "Package": "renv",
       "Version": "0.17.0",
@@ -792,6 +919,20 @@
         "utils"
       ],
       "Hash": "50a6dbdc522936ca35afc5e2082ea91b"
+    },
+    "rosmium": {
+      "Package": "rosmium",
+      "Version": "0.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "checkmate",
+        "geojsonsf",
+        "processx",
+        "sf",
+        "utils"
+      ],
+      "Hash": "af5dfd354d257fc2e1cc6307f617d53f"
     },
     "s2": {
       "Package": "s2",
@@ -847,6 +988,18 @@
         "utils"
       ],
       "Hash": "e2111252a76984ca50bf8d6314348681"
+    },
+    "sfheaders": {
+      "Package": "sfheaders",
+      "Version": "0.4.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "Rcpp",
+        "geometries"
+      ],
+      "Hash": "0b0a55852e87b8f8478efb505eba2ebe"
     },
     "stringi": {
       "Package": "stringi",
@@ -1044,6 +1197,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "0d0056cc5383fbc240ccd0cb584bf436"
+    },
+    "zip": {
+      "Package": "zip",
+      "Version": "2.3.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "d98c94dacb7e0efcf83b0a133a705504"
     }
   }
 }
