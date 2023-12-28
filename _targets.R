@@ -79,5 +79,19 @@ list(
     retrieval = "worker",
     storage = "worker",
     iteration = "list"
+  ),
+  
+  # 3_routing
+  tar_target(
+    walk_matrix,
+    calculate_ttm(r5_network, routing_points, mode = "WALK"),
+    format = "file_fast",
+    pattern = map(routing_points)
+  ),
+  tar_target(
+    bike_matrix,
+    calculate_ttm(r5_network, routing_points, mode = "BICYCLE"),
+    format = "file_fast",
+    pattern = map(routing_points)
   )
 )
