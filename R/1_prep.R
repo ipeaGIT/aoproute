@@ -80,10 +80,10 @@ non_empty_cells_count <- function(is, grids_paths) {
 
 # pop_units <- tar_read(pop_units)
 # h3_resolutions <- tar_read(h3_resolutions)
-get_grids_paths <- function(pop_units, h3_resolutions) {
+get_grids_paths <- function(pop_units, h3_resolutions, census_year = 2022) {
   grids_dir <- "../../data/acesso_oport_v2/hex_grids_with_data"
   resolutions_dir <- file.path(grids_dir, paste0("res_", h3_resolutions))
-  census_dir <- file.path(resolutions_dir, "2010")
+  census_dir <- file.path(resolutions_dir, census_year)
   
   basenames <- paste0(
     pop_units$code_pop_unit,
@@ -132,12 +132,55 @@ routing_points_from_path <- function(path) {
   return(routing_points)
 }
 
-# brazil_pbf <- tar_read(brazil_pbf)
-filter_pbf <- function(brazil_pbf) {
-  filtered_path <- "data/filtered_brazil_20231226.osm.pbf"
+
+# pbf -----------------------------------------------------------------------------------------
+
+# save_dir = "../../data-raw/osm"; time_stamp = TRUE; overwrite = FALSE; ts_level = 'year'
+
+get_pbf <- function(save_dir, time_stamp = TRUE, overwrite = FALSE, ts_level = c('year', 'month')) {
+  
+  ts_level <- rlang::arg_match(ts_level)
+  if(!dir.exists(save_dir)) dir.create(save_dir)  
+  
+  if(time_stamp) {
+    ts <- Sys.Date() |> 
+      stringr::str_remove_all("-") 
+    
+    ts <- if(ts_level == "year") {
+      stringr::str_sub(ts, 1, 4)
+    } else if(ts_level == "month") {
+      stringr::str_sub(ts, 1, 6)
+    }
+    ts <- paste0("_", ts)
+  } else {
+    ts <- ""
+  }
+  
+  save_path <- file.path(save_dir, paste0("brazil", ts, ".osm.pbf"))
+  
+  if(!overwrite) {
+    if(file.exists(save_path)) {
+      return(save_path)
+    }
+  }
+  
+  temp_path <- osmextract::oe_download(
+    file_url = osmextract::oe_match("brazil", "openstreetmap_fr")[[1]],
+    provider = "openstreetmap_fr",
+    download_directory = save_dir
+  )
+  
+  file.rename(temp_path, save_path)
+  
+  return(save_path)
+}
+
+# pbf_path <- targets::tar_read(brazil_pbf)
+filter_pbf <- function(pbf_path) {
+  filtered_path <- stringr::str_replace(pbf_path, ".osm.pbf$", "_filtered.osm.pbf")
   
   rosmium::tags_filter(
-    brazil_pbf,
+    pbf_path,
     filters = paste(
       "w/highway w/park_ride w/public_transport=platform w/railway=platform",
       "r/type=restriction"
