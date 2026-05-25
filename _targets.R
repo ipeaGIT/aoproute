@@ -1,6 +1,7 @@
 options(
   TARGETS_SHOW_PROGRESS = TRUE,
   TARGETS_N_CORES = 35,
+  timeout = 600,
   java.parameters = "-Xmx50G"
 )
 
