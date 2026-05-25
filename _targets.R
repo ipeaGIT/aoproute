@@ -7,6 +7,7 @@ options(
 
 suppressPackageStartupMessages({
   library(targets)
+  library(dplyr)
   library(ggplot2)
   library(sf)
 })
@@ -34,8 +35,14 @@ list(
     format = "file"
   ),
   
+  
   # 1_prep
-  tar_target(pop_units, readRDS(pop_units_dataset), iteration = "group"),
+  tar_target(
+    name = pop_units, 
+    command = readRDS(pop_units_dataset) |> 
+      mutate(label_pop_unit = paste(code_pop_unit, name_pop_unit, sep = "_")),
+    iteration = "group"
+  ),
   tar_target(
     batches_by_pop_unit_area,
     get_batches_by_area(pop_units, n_batches),
@@ -56,6 +63,7 @@ list(
     iteration = "list"
   ),
   tar_target(filtered_brazil_pbf, filter_pbf(brazil_pbf), format = "file"),
+  
   
   # 2_r5r_file_structure
   tar_target(r5_dirs, create_r5_dirs(pop_units)),

@@ -8,7 +8,7 @@
 # targets::tar_make(brazil_pbf)
 # targets::tar_make(filtered_brazil_pbf)
 targets::tar_make(routing_points)
-targets::tar_make(r5_dirs)
+# targets::tar_make(r5_dirs)
 
 
 

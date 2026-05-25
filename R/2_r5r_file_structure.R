@@ -1,10 +1,11 @@
+
+# create_r5_dirs ----------------------------------------------------------
+
 # pop_units <- tar_read(pop_units)
-create_r5_dirs <- function(pop_units) {
+create_r5_dirs <- function(pop_units, root = "../../data/acesso_oport_v3/r5") {
   dir_names <- paste0(pop_units$code_pop_unit, "_", pop_units$treated_name)
   
-  r5_dir <- "../../data/acesso_oport_v2/r5"
-  
-  dirs <- file.path(r5_dir, dir_names)
+  dirs <- file.path(root, dir_names)
   
   for (dir in dirs) {
     if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
@@ -13,10 +14,19 @@ create_r5_dirs <- function(pop_units) {
   return(dirs)
 }
 
+
+
+# download_elevation_data -------------------------------------------------
+
 # pop_units <- tar_read(pop_units)
 # r5_dirs <- tar_read(r5_dirs)
 # indices <- tar_read(batches_by_pop_unit_area)[[1]]
-download_elevation_data <- function(pop_units, r5_dirs, indices) {
+
+download_elevation_data <- function(
+    pop_units, r5_dirs, indices, 
+    tiles_dir = "../../data-raw/elev/zipped_elevation_tiles",
+    overwrite = FALSE
+    ) {
   # was originally using {elevatr} to download the data, but kept stumbling upon
   # some C stack usage errors. decided to do it "manually".
   
@@ -24,8 +34,20 @@ download_elevation_data <- function(pop_units, r5_dirs, indices) {
   pop_units <- pop_units[indices, ]
   pop_units <- sf::st_transform(pop_units, 4326)
   
-  # using the bounding box of each feature to get the tiles that cover them
+  if(!overwrite) {
+    cache_elevation_files <- file.path(r5_dirs, "elevation.tif")
+    existing_files <- file.exists(cache_elevation_files)
+    if(all(existing_files)) return(cache_elevation_files)
+    if(any(existing_files)) {
+      indices <- indices[!existing_files]
+      r5_dirs <- r5_dirs[!existing_files]
+      pop_units <- pop_units[!existing_files, ]
+    }
+  } else {
+    cache_elevation_files <- existing_files <- NULL
+  }
   
+  # using the bounding box of each feature to get the tiles that cover them
   bboxes <- lapply(1:nrow(pop_units), function(i) sf::st_bbox(pop_units[i, ]))
   
   pop_units_tiles <- lapply(bboxes, tiles_from_bbox)
@@ -37,8 +59,7 @@ download_elevation_data <- function(pop_units, r5_dirs, indices) {
     ".SRTMGL1.hgt.zip"
   )
   
-  tiles_dir <- "../../data/acesso_oport_v2/zipped_elevation_tiles"
-  if (!dir.exists(tiles_dir)) dir.create(tiles_dir)
+  if(!dir.exists(tiles_dir)) dir.create(tiles_dir)
   output_files <- file.path(tiles_dir, paste0(unique_tiles, ".hgt.zip"))
   
   responses <- mapply(
@@ -79,6 +100,7 @@ download_elevation_data <- function(pop_units, r5_dirs, indices) {
     output_files,
     function(f) suppressWarnings(utils::unzip(f, exdir = tmpdir))
   )
+  
   names(unzipped_tiles) <- unique_tiles
   
   elevation_files <- mapply(
@@ -122,8 +144,18 @@ download_elevation_data <- function(pop_units, r5_dirs, indices) {
   
   elevation_files <- unlist(elevation_files)
   
-  return(elevation_files)
+  if(!overwrite) {
+    cache_elevation_files[!existing_files] <- elevation_files
+    return(cache_elevation_files)
+  } else {
+    return(elevation_files)
+  }
+  
 }
+
+
+
+# tiles_from_bbox ---------------------------------------------------------
 
 tiles_from_bbox <- function(bbox) {
   lons <- seq(floor(bbox$xmin), ceiling(bbox$xmax - 1), by = 1)
@@ -143,6 +175,10 @@ tiles_from_bbox <- function(bbox) {
   
   return(tiles)
 }
+
+
+
+# crop_pbf_data -----------------------------------------------------------
 
 # filtered_brazil_pbf <- tar_read(filtered_brazil_pbf)
 # pop_units <- tar_read(pop_units)
@@ -173,6 +209,9 @@ crop_pbf_data <- function(filtered_brazil_pbf, pop_units, indices) {
   
   return(cropped_files)
 }
+
+
+# build_r5_network --------------------------------------------------------
 
 # elevation_data <- tar_read(elevation_data, branches = 1)[[1]]
 # pbf_data <- tar_read(pbf_data, branches = 1)[[1]]
