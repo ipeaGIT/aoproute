@@ -8,6 +8,7 @@ options(
 suppressPackageStartupMessages({
   library(targets)
   library(dplyr)
+  library(geoarrow)
   library(ggplot2)
   library(sf)
 })
@@ -40,7 +41,7 @@ list(
   tar_target(
     name = pop_units, 
     command = readRDS(pop_units_dataset) |> 
-      mutate(label_pop_unit = paste(code_pop_unit, name_pop_unit, sep = "_")),
+      mutate(label_pop_unit = paste(code_pop_unit, treated_name, sep = "_")),
     iteration = "group"
   ),
   tar_target(
@@ -48,7 +49,7 @@ list(
     get_batches_by_area(pop_units, n_batches),
     iteration = "list"
   ),
-  tar_target(paths_list, get_grids_paths(pop_units, h3_resolutions)),
+  tar_target(paths_list, get_grid_paths(pop_units, h3_resolutions)),
   tar_target(
     batches,
     get_batches_indices(paths_list, n_batches),
