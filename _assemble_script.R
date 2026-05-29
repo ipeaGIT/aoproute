@@ -9,14 +9,18 @@
 # targets::tar_make(filtered_brazil_pbf)
 # targets::tar_make_future(grid_filtered, workers = 4)
 # targets::tar_make(n_cells)
-
+# targets::tar_make(batches)
+# targets::tar_invalidate(feeds_meta)
+# targets::tar_make(transit_areas)
+# targets::tar_make_future(feed_paths, workers = 32)
+targets::tar_make(feeds_adjusted)
 
 
 
 # # just to more easily remember which targets should be run in parallel and which
 # # should not. doesn't necessarily run all targets and doesn't necessarily
 # # reflects the actual order in which they were run
-targets::tar_make(batches)
+# targets::tar_make(batches)
 # targets::tar_make_future(c(routing_points, elevation_data), workers = 35)
 # Sys.sleep(5)
 # targets::tar_make_future(pbf_data, workers = 20)

@@ -11,6 +11,7 @@ suppressPackageStartupMessages({
   library(duckspatial)
   library(geoarrow)
   library(ggplot2)
+  library(gtfstools)
   library(sf)
 })
 
@@ -38,7 +39,7 @@ list(
   ),
   
   
-  # 1_prep
+  # 1_prep --------------------------------------------------------------------------------------
   tar_target(
     name = pop_units, 
     command = readRDS(pop_units_dataset) |> 
@@ -56,18 +57,19 @@ list(
   #   get_batches_indices(paths_list, n_batches),
   #   iteration = "list"
   # ),
-  tar_target(
-    routing_points,
-    get_points(paths_list, batches),
-    pattern = map(batches),
-    retrieval = "worker",
-    storage = "worker",
-    iteration = "list"
-  ),
+  # tar_target(
+  #   routing_points,
+  #   get_points(paths_list, batches),
+  #   pattern = map(batches),
+  #   retrieval = "worker",
+  #   storage = "worker",
+  #   iteration = "list"
+  # ),
   tar_target(filtered_brazil_pbf, filter_pbf(brazil_pbf), format = "file"),
   
   
-  # 2_r5r_file_structure
+  # 2_r5r_file_structure ------------------------------------------------------------------------
+  
   tar_target(r5_dirs, create_r5_dirs(pop_units)),
   tar_target(
     elevation_data,
@@ -87,17 +89,10 @@ list(
     storage = "worker",
     iteration = "list"
   ),
-  tar_target(
-    r5_network,
-    build_r5_network(elevation_data, pbf_data),
-    format = "file",
-    pattern = map(elevation_data, pbf_data),
-    retrieval = "worker",
-    storage = "worker",
-    iteration = "list"
-  ),
   
-  # 2b_bypass_grid
+  
+  # 2b_bypass_grid ------------------------------------------------------------------------------
+    
   tar_target(
     name = grid_filtered,
     command = filter_grid_by_pbf(grid_path = paths_list, pbf_paths = unlist(pbf_data), buffer = 250),
@@ -114,7 +109,48 @@ list(
     iteration = "list"
   ),
   
-  # 3_routing
+  
+  # 2c_gtfs -------------------------------------------------------------------------------------
+
+  tar_target(
+    name = feeds_meta,
+    command = arrow::read_parquet("../../data/acesso_oport_v3/feeds_metadata.parquet") |> 
+      filter(is.na(action) | !stringr::str_detect(action, "fallback|discard")),
+    format = "parquet"
+  ),
+  tar_target(
+    name = transit_areas,
+    command = distinct(feeds_meta, code_pop_unit) |> 
+      inner_join(pop_units) |> 
+      select(label_pop_unit, code_pop_unit) |> 
+      tibble::deframe()
+  ),
+  tar_target(
+    name = feed_paths,
+    command = import_feeds(feeds_meta = feeds_meta, pop_unit = transit_areas, 
+                           areas_sf = pop_units, overwrite = F),
+    pattern = map(transit_areas),
+    format = "file"
+  ),
+  tar_target(
+    name = feeds_adjusted,
+    command = adjust_feeds(code_unit = transit_areas, feeds_meta = feeds_meta, 
+                           feed_paths = feed_paths),
+    pattern = map(transit_areas),
+    format = "file"
+  ),
+  
+  
+  # 3_routing -----------------------------------------------------------------------------------
+  tar_target(
+    r5_network,
+    build_r5_network(elevation_data, pbf_data),
+    format = "file",
+    pattern = map(elevation_data, pbf_data),
+    retrieval = "worker",
+    storage = "worker",
+    iteration = "list"
+  ),
   tar_target(
     walk_matrix,
     calculate_ttm(r5_network, routing_points, mode = "WALK"),
