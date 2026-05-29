@@ -8,6 +8,7 @@ options(
 suppressPackageStartupMessages({
   library(targets)
   library(dplyr)
+  library(duckspatial)
   library(geoarrow)
   library(ggplot2)
   library(sf)
@@ -50,11 +51,11 @@ list(
     iteration = "list"
   ),
   tar_target(paths_list, get_grid_paths(pop_units, h3_resolutions)),
-  tar_target(
-    batches,
-    get_batches_indices(paths_list, n_batches),
-    iteration = "list"
-  ),
+  # tar_target(
+  #   batches,
+  #   get_batches_indices(paths_list, n_batches),
+  #   iteration = "list"
+  # ),
   tar_target(
     routing_points,
     get_points(paths_list, batches),
@@ -93,6 +94,23 @@ list(
     pattern = map(elevation_data, pbf_data),
     retrieval = "worker",
     storage = "worker",
+    iteration = "list"
+  ),
+  
+  # 2b_bypass_grid
+  tar_target(
+    name = grid_filtered,
+    command = filter_grid_by_pbf(grid_path = paths_list, pbf_paths = unlist(pbf_data), buffer = 250),
+    pattern = map(paths_list)
+  ),
+  tar_target(
+    name = n_cells, 
+    command = count_cells(grid_filtered),
+    pattern = map(grid_filtered)
+  ),
+  tar_target(
+    name = batches,
+    command = get_batches_indices(cell_counts = n_cells, n_batches = n_batches),
     iteration = "list"
   ),
   
