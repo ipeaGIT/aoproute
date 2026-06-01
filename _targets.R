@@ -1,3 +1,6 @@
+
+# setup ---------------------------------------------------------------------------------------
+
 options(
   TARGETS_SHOW_PROGRESS = TRUE,
   TARGETS_N_CORES = 35,
@@ -7,6 +10,7 @@ options(
 
 suppressPackageStartupMessages({
   library(targets)
+  library(crew)
   library(dplyr)
   library(duckspatial)
   library(geoarrow)
@@ -15,16 +19,22 @@ suppressPackageStartupMessages({
   library(sf)
 })
 
+tar_option_set(
+  controller = crew_controller_local(workers = floor(.75*parallelly::freeCores()[1])),
+  retrieval = "worker",
+  storage = "worker",
+  trust_timestamps = TRUE,
+  workspace_on_error = TRUE 
+  )
+
 tar_source()
-# source("R/1_prep.R", encoding = "UTF-8")
-# source("R/2_r5r_file_structure.R", encoding = "UTF-8")
-# source("R/3_routing.R", encoding = "UTF-8")
 
-if (!interactive()) future::plan(future.callr::callr)
 
-tar_option_set(workspace_on_error = TRUE, trust_timestamps = T)
+
+# targets list --------------------------------------------------------------------------------
 
 list(
+  ## parameters  ------------------------------------------------------------------------------
   tar_target(name = h3_resolutions, command = 7:9),
   tar_target(name = n_batches, command = 35),
   tar_target(
@@ -39,7 +49,7 @@ list(
   ),
   
   
-  # 1_prep --------------------------------------------------------------------------------------
+  # 1_prep ------------------------------------------------------------------------------------
   tar_target(
     name = pop_units, 
     command = readRDS(pop_units_dataset) |> 
@@ -57,18 +67,18 @@ list(
   #   get_batches_indices(paths_list, n_batches),
   #   iteration = "list"
   # ),
-  # tar_target(
-  #   routing_points,
-  #   get_points(paths_list, batches),
-  #   pattern = map(batches),
-  #   retrieval = "worker",
-  #   storage = "worker",
-  #   iteration = "list"
-  # ),
+  tar_target(
+    routing_points,
+    get_points(paths_list, batches),
+    pattern = map(batches),
+    retrieval = "worker",
+    storage = "worker",
+    iteration = "list"
+  ),
   tar_target(filtered_brazil_pbf, filter_pbf(brazil_pbf), format = "file"),
   
   
-  # 2_r5r_file_structure ------------------------------------------------------------------------
+  # 2_r5r_file_structure ----------------------------------------------------------------------
   
   tar_target(r5_dirs, create_r5_dirs(pop_units)),
   tar_target(
@@ -91,7 +101,7 @@ list(
   ),
   
   
-  # 2b_bypass_grid ------------------------------------------------------------------------------
+  # 2b_bypass_grid ----------------------------------------------------------------------------
     
   tar_target(
     name = grid_filtered,
@@ -110,7 +120,7 @@ list(
   ),
   
   
-  # 2c_gtfs -------------------------------------------------------------------------------------
+  # 2c_gtfs -----------------------------------------------------------------------------------
 
   tar_target(
     name = feeds_meta,
@@ -141,15 +151,16 @@ list(
   ),
   
   
-  # 3_routing -----------------------------------------------------------------------------------
+  # 3_routing ---------------------------------------------------------------------------------
   tar_target(
     r5_network,
-    build_r5_network(elevation_data, pbf_data),
+    build_r5_network(elevation_data, pbf_data, feeds_adjusted),
     format = "file",
     pattern = map(elevation_data, pbf_data),
     retrieval = "worker",
     storage = "worker",
-    iteration = "list"
+    iteration = "list",
+    error = "null"
   ),
   tar_target(
     walk_matrix,
